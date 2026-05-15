@@ -44,7 +44,7 @@ export default function Home() {
   }
 
   function getExplorerLink() {
-    return "https://chainscan-newton.0g.ai/tx/" + txHash;
+    return "https://chainscan.0g.ai/tx/" + txHash;
   }
 
   return (
