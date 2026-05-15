@@ -1,0 +1,42 @@
+import { NextResponse } from "next/server";
+import { Blob as ZgBlob, Indexer } from "@0gfoundation/0g-storage-ts-sdk";
+import { JsonRpcProvider, Wallet } from "ethers";
+
+const INDEXER_RPC = "https://indexer-storage-turbo.0g.ai";
+const RPC_URL = "https://evmrpc.0g.ai";
+
+export async function POST(request) {
+  try {
+    const encryptedPayload = await request.json();
+
+    const privateKey = process.env.UPLOADER_PRIVATE_KEY;
+    if (!privateKey) {
+      return NextResponse.json(
+        { error: "Server wallet not configured" },
+        { status: 500 }
+      );
+    }
+
+    const provider = new JsonRpcProvider(RPC_URL);
+    const signer = new Wallet(privateKey, provider);
+
+    const jsonString = JSON.stringify(encryptedPayload);
+    const nativeBlob = new Blob([jsonString], { type: "application/json" });
+    const browserFile = new File([nativeBlob], "silentdrop.json", {
+      type: "application/json",
+    });
+
+    const zgBlob = new ZgBlob(browserFile);
+    const [tree, treeErr] = await zgBlob.merkleTree();
+    if (treeErr) throw new Error("Merkle tree error: " + treeErr);
+
+    const indexer = new Indexer(INDEXER_RPC);
+    const [tx, err] = await indexer.upload(zgBlob, RPC_URL, signer);
+    if (err) throw new Error("Upload failed: " + err);
+
+    return NextResponse.json({ txHash: tx.txHash });
+  } catch (err) {
+    console.error("Upload API error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
