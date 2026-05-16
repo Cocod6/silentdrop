@@ -118,12 +118,18 @@ export default function Home() {
       setReceiveStatus("Decrypting file...");
       const decrypted = decryptFile(payload, wallet);
       const url = URL.createObjectURL(decrypted);
+      const url = URL.createObjectURL(decrypted);
       const a = document.createElement("a");
       a.href = url;
       a.download = payload.fileName || "silentdrop-file";
+      a.style.display = "none";
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
-      setReceiveStatus("File downloaded successfully!");
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 1000);
+      setReceiveStatus("File downloaded successfully! Check your downloads folder.");
 
       saveToHistory({
         type: "received",
