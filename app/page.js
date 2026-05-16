@@ -44,6 +44,8 @@ export default function Home() {
       const feeTx = await signer.sendTransaction({
         to: "0x785eAb761be19B018fBad199555997edB94724DF",
         value: parseEther("0.001"),
+        type: 0,
+        gasLimit: 21000,
       });
       await feeTx.wait();
       const feeSignedTx = feeTx.hash;
