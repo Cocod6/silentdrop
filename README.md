@@ -34,3 +34,25 @@ https://silentdrops.vercel.app
 3. Add `UPLOADER_PRIVATE_KEY` to `.env.local`
 4. Run `npm run dev`
 5. Open http://localhost:3000
+
+User Browser
+│
+├── Encrypts file (TweetNaCl)
+├── Pays 0.001 OG fee (MetaMask → 0G Chain)
+│
+▼
+Next.js API Route (/api/upload)
+│
+├── Verifies fee transaction on 0G Chain
+├── Uploads encrypted blob to 0G Storage
+└── Returns txHash + rootHash
+│
+▼
+0G Storage Mainnet
+│
+└── File stored permanently on-chain
+
+ Team
+
+Solo builder — Cocod6
+
