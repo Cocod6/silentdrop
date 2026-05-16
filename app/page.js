@@ -4,9 +4,9 @@ import { BrowserProvider, parseEther } from "ethers";
 import { encryptFile, decryptFile } from "./encrypt";
 import { uploadToOG, downloadFromOG } from "./storage";
 
-const OG_CHAIN_ID = "0x4189";
+const OG_CHAIN_ID = "0x4115";
 const OG_CHAIN_PARAMS = {
-  chainId: "0x4189",
+  chainId: "0x4115",
   chainName: "0G Mainnet",
   nativeCurrency: { name: "OG", symbol: "OG", decimals: 18 },
   rpcUrls: ["https://evmrpc.0g.ai"],
