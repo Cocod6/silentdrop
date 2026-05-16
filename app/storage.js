@@ -13,3 +13,14 @@ export async function uploadToOG(encryptedPayload) {
 
   return { txHash: data.txHash };
 }
+
+export async function downloadFromOG(txHash) {
+  const response = await fetch("/api/download?tx=" + txHash);
+  const data = await response.json();
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data.payload;
+}

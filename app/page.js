@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { encryptFile } from "./encrypt";
-import { uploadToOG } from "./storage";
+import { encryptFile, decryptFile } from "./encrypt";
+import { uploadToOG, downloadFromOG } from "./storage";
 
 export default function Home() {
   const [tab, setTab] = useState("send");
@@ -10,6 +10,8 @@ export default function Home() {
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState("");
   const [txHash, setTxHash] = useState(null);
+  const [receiveTx, setReceiveTx] = useState("");
+  const [receiveStatus, setReceiveStatus] = useState("");
 
   async function connectWallet() {
     if (typeof window.ethereum === "undefined") {
@@ -40,6 +42,32 @@ export default function Home() {
       setStatus("File sent successfully on 0G!");
     } catch (err) {
       setStatus("Error: " + err.message);
+    }
+  }
+
+  async function handleReceive() {
+    if (!wallet) {
+      alert("Please connect your wallet first!");
+      return;
+    }
+    if (!receiveTx) {
+      alert("Please enter a transaction hash!");
+      return;
+    }
+    try {
+      setReceiveStatus("Fetching from 0G Storage...");
+      const payload = await downloadFromOG(receiveTx);
+      setReceiveStatus("Decrypting file...");
+      const decrypted = decryptFile(payload, wallet);
+      const url = URL.createObjectURL(decrypted);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = payload.fileName || "silentdrop-file";
+      a.click();
+      URL.revokeObjectURL(url);
+      setReceiveStatus("File downloaded successfully!");
+    } catch (err) {
+      setReceiveStatus("Error: " + err.message);
     }
   }
 
@@ -122,16 +150,28 @@ export default function Home() {
 
       {tab === "receive" && (
         <div className="w-full max-w-md bg-gray-900 rounded-2xl p-6 flex flex-col gap-4">
-          <h2 className="text-xl font-semibold text-purple-300">Receive Files</h2>
+          <h2 className="text-xl font-semibold text-purple-300">Receive a File</h2>
+          <div className="flex flex-col gap-1">
+            <label className="text-gray-400 text-sm">Paste Transaction Hash</label>
+            <input
+              type="text"
+              placeholder="0x..."
+              value={receiveTx}
+              onChange={(e) => setReceiveTx(e.target.value)}
+              className="bg-gray-800 text-white rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
           <button
-            onClick={connectWallet}
+            onClick={handleReceive}
             className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg"
           >
-            {wallet ? "Wallet Connected" : "Connect Wallet to View Files"}
+            Decrypt and Download
           </button>
-          <div className="text-gray-500 text-sm text-center">
-            {wallet ? "Showing files for " + wallet.slice(0, 6) + "..." + wallet.slice(-4) : "Connect your wallet to see files sent to your address"}
-          </div>
+          {receiveStatus && (
+            <div className="text-sm text-center text-purple-300 bg-purple-950 rounded-lg px-4 py-2">
+              {receiveStatus}
+            </div>
+          )}
         </div>
       )}
     </main>
