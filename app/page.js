@@ -39,16 +39,16 @@ export default function Home() {
       const payload = await encryptFile(file, recipient);
 
       setStatus("Requesting fee payment of 0.001 OG...");
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const feeTx = await signer.sendTransaction({
-        to: "0x785eAb761be19B018fBad199555997edB94724DF",
-        value: parseEther("0.001"),
-        type: 0,
-        gasLimit: 21000,
-      });
-      await feeTx.wait();
-      const feeSignedTx = feeTx.hash;
+      const feeHash = await window.ethereum.request({
+        method: "eth_sendTransaction",
+        params: [{
+         from: wallet,
+         to: "0x785eAb761be19B018fBad199555997edB94724DF",
+         value: "0x38D7EA4C68000",
+         gas: "0x5208",
+      }],
+    });
+    const feeSignedTx = feeHash;
 
       setStatus("Uploading to 0G Storage...");
       const tx = await uploadToOG(payload, feeSignedTx);
