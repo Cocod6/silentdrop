@@ -118,7 +118,6 @@ export default function Home() {
       setReceiveStatus("Decrypting file...");
       const decrypted = decryptFile(payload, wallet);
       const url = URL.createObjectURL(decrypted);
-      const url = URL.createObjectURL(decrypted);
       const a = document.createElement("a");
       a.href = url;
       a.download = payload.fileName || "silentdrop-file";
