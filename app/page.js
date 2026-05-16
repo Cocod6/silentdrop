@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BrowserProvider, parseEther } from "ethers";
 import { encryptFile, decryptFile } from "./encrypt";
 import { uploadToOG, downloadFromOG } from "./storage";
@@ -24,6 +24,18 @@ export default function Home() {
   const [receiveTx, setReceiveTx] = useState("");
   const [receiveStatus, setReceiveStatus] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("silentdrop_history");
+    if (saved) setHistory(JSON.parse(saved));
+  }, []);
+
+  function saveToHistory(entry) {
+    const updated = [entry, ...history].slice(0, 50);
+    setHistory(updated);
+    localStorage.setItem("silentdrop_history", JSON.stringify(updated));
+  }
 
   async function switchToOG() {
     try {
@@ -77,13 +89,21 @@ export default function Home() {
       });
 
       setStatus("Confirming fee...");
-      const feeSignedTx = feeHash;
-
       setStatus("Uploading to 0G Storage...");
-      const tx = await uploadToOG(payload, feeSignedTx);
+      const tx = await uploadToOG(payload, feeHash);
       setTxHash(tx.txHash);
       setRootHash(tx.rootHash);
       setStatus("File sent successfully on 0G!");
+
+      saveToHistory({
+        type: "sent",
+        fileName: file.name,
+        fileSize: (file.size / 1024).toFixed(1) + " KB",
+        recipient: recipient.slice(0, 6) + "..." + recipient.slice(-4),
+        rootHash: tx.rootHash,
+        txHash: tx.txHash,
+        date: new Date().toLocaleString(),
+      });
     } catch (err) {
       setStatus("Error: " + err.message);
     }
@@ -104,6 +124,13 @@ export default function Home() {
       a.click();
       URL.revokeObjectURL(url);
       setReceiveStatus("File downloaded successfully!");
+
+      saveToHistory({
+        type: "received",
+        fileName: payload.fileName || "Unknown file",
+        rootHash: receiveTx,
+        date: new Date().toLocaleString(),
+      });
     } catch (err) {
       setReceiveStatus("Error: " + err.message);
     }
@@ -115,8 +142,15 @@ export default function Home() {
 
   function copyToClipboard(text) {
     navigator.clipboard.writeText(text);
-    alert("Copied to clipboard!");
+    alert("Copied!");
   }
+
+  function clearHistory() {
+    setHistory([]);
+    localStorage.removeItem("silentdrop_history");
+  }
+
+  const tabs = ["send", "receive", "history"];
 
   return (
     <main style={{
@@ -130,7 +164,6 @@ export default function Home() {
       padding: "40px 20px"
     }}>
 
-      {/* Glow orbs */}
       <div style={{
         position: "fixed", top: "10%", left: "20%",
         width: "400px", height: "400px",
@@ -174,7 +207,7 @@ export default function Home() {
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               margin: 0, letterSpacing: "-0.5px"
             }}>SilentDrop</h1>
-            <p style={{ color: "#4b5563", fontSize: "12px", margin: "2px 0 0 0", letterSpacing: "0.02em" }}>
+            <p style={{ color: "#4b5563", fontSize: "12px", margin: "2px 0 0 0" }}>
               Private file transfer · 0G Storage
             </p>
           </div>
@@ -187,14 +220,9 @@ export default function Home() {
           border: "1px solid rgba(124,58,237,0.25)",
           borderRadius: "100px",
           color: wallet ? "#c4b5fd" : "#8b5cf6",
-          fontSize: "13px",
-          padding: "9px 18px",
-          cursor: "pointer",
-          backdropFilter: "blur(12px)",
-          transition: "all 0.2s",
-          display: "flex",
-          alignItems: "center",
-          gap: "6px"
+          fontSize: "13px", padding: "9px 18px",
+          cursor: "pointer", backdropFilter: "blur(12px)",
+          display: "flex", alignItems: "center", gap: "6px"
         }}>
           <span style={{
             width: "6px", height: "6px", borderRadius: "50%",
@@ -210,8 +238,7 @@ export default function Home() {
         width: "100%", maxWidth: "500px",
         background: "rgba(255,255,255,0.025)",
         border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: "28px",
-        padding: "36px",
+        borderRadius: "28px", padding: "36px",
         backdropFilter: "blur(24px)",
         position: "relative", zIndex: 1,
         boxShadow: "0 0 60px rgba(124,58,237,0.07), inset 0 1px 0 rgba(255,255,255,0.05)"
@@ -221,24 +248,23 @@ export default function Home() {
         <div style={{
           display: "flex",
           background: "rgba(0,0,0,0.3)",
-          borderRadius: "14px",
-          padding: "4px",
+          borderRadius: "14px", padding: "4px",
           marginBottom: "36px",
           border: "1px solid rgba(255,255,255,0.04)"
         }}>
-          {["send", "receive"].map((t) => (
+          {tabs.map((t) => (
             <button key={t} onClick={() => setTab(t)} style={{
               flex: 1, padding: "11px",
               borderRadius: "11px", border: "none",
-              cursor: "pointer", fontSize: "14px", fontWeight: "500",
+              cursor: "pointer", fontSize: "13px", fontWeight: "500",
               transition: "all 0.25s",
               background: tab === t
                 ? "linear-gradient(135deg, rgba(124,58,237,0.3), rgba(109,40,217,0.2))"
                 : "transparent",
               color: tab === t ? "#c4b5fd" : "#4b5563",
-              boxShadow: tab === t ? "0 0 20px rgba(124,58,237,0.15), inset 0 1px 0 rgba(255,255,255,0.05)" : "none"
+              boxShadow: tab === t ? "0 0 20px rgba(124,58,237,0.15)" : "none"
             }}>
-              {t === "send" ? "↑  Send File" : "↓  Receive File"}
+              {t === "send" ? "↑ Send" : t === "receive" ? "↓ Receive" : "⏱ History"}
             </button>
           ))}
         </div>
@@ -246,12 +272,8 @@ export default function Home() {
         {/* Send Panel */}
         {tab === "send" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
-
             <div>
-              <label style={{
-                color: "#6b7280", fontSize: "11px", fontWeight: "600",
-                letterSpacing: "0.08em", textTransform: "uppercase"
-              }}>Recipient Wallet</label>
+              <label style={{ color: "#6b7280", fontSize: "11px", fontWeight: "600", letterSpacing: "0.08em", textTransform: "uppercase" }}>Recipient Wallet</label>
               <input
                 type="text" placeholder="0x..."
                 value={recipient}
@@ -260,20 +282,15 @@ export default function Home() {
                   width: "100%", marginTop: "8px",
                   background: "rgba(0,0,0,0.3)",
                   border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: "14px",
-                  padding: "13px 16px",
+                  borderRadius: "14px", padding: "13px 16px",
                   color: "white", fontSize: "13px", outline: "none",
-                  boxSizing: "border-box", fontFamily: "monospace",
-                  transition: "border 0.2s"
+                  boxSizing: "border-box", fontFamily: "monospace"
                 }}
               />
             </div>
 
             <div>
-              <label style={{
-                color: "#6b7280", fontSize: "11px", fontWeight: "600",
-                letterSpacing: "0.08em", textTransform: "uppercase"
-              }}>File</label>
+              <label style={{ color: "#6b7280", fontSize: "11px", fontWeight: "600", letterSpacing: "0.08em", textTransform: "uppercase" }}>File</label>
               <div
                 onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
                 onDragLeave={() => setDragging(false)}
@@ -325,8 +342,7 @@ export default function Home() {
               borderRadius: "14px", padding: "15px",
               color: "white", fontSize: "15px", fontWeight: "600",
               cursor: "pointer",
-              boxShadow: "0 0 40px rgba(124,58,237,0.25), inset 0 1px 0 rgba(255,255,255,0.1)",
-              transition: "all 0.2s"
+              boxShadow: "0 0 40px rgba(124,58,237,0.25), inset 0 1px 0 rgba(255,255,255,0.1)"
             }}>
               Encrypt & Send
             </button>
@@ -365,9 +381,7 @@ export default function Home() {
                 borderRadius: "14px", padding: "18px"
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <p style={{ color: "#6b7280", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.06em", margin: 0 }}>
-                    Root Hash
-                  </p>
+                  <p style={{ color: "#6b7280", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.06em", margin: 0 }}>Root Hash</p>
                   <button onClick={() => copyToClipboard(rootHash)} style={{
                     background: "rgba(124,58,237,0.2)",
                     border: "1px solid rgba(124,58,237,0.2)",
@@ -376,7 +390,7 @@ export default function Home() {
                   }}>Copy</button>
                 </div>
                 <p style={{ color: "#c4b5fd", fontSize: "12px", wordBreak: "break-all", margin: "0 0 8px 0", fontFamily: "monospace" }}>{rootHash}</p>
-                <p style={{ color: "#4b5563", fontSize: "11px", margin: 0 }}>Share this with your recipient so they can download the file</p>
+                <p style={{ color: "#4b5563", fontSize: "11px", margin: 0 }}>Share this with your recipient to download the file</p>
               </div>
             )}
           </div>
@@ -385,12 +399,8 @@ export default function Home() {
         {/* Receive Panel */}
         {tab === "receive" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
-
             <div>
-              <label style={{
-                color: "#6b7280", fontSize: "11px", fontWeight: "600",
-                letterSpacing: "0.08em", textTransform: "uppercase"
-              }}>Root Hash</label>
+              <label style={{ color: "#6b7280", fontSize: "11px", fontWeight: "600", letterSpacing: "0.08em", textTransform: "uppercase" }}>Root Hash</label>
               <input
                 type="text" placeholder="0x..."
                 value={receiveTx}
@@ -412,7 +422,7 @@ export default function Home() {
               borderRadius: "12px", padding: "14px 16px"
             }}>
               <p style={{ color: "#4b5563", fontSize: "12px", margin: 0, lineHeight: "1.6" }}>
-                Make sure your wallet address matches the recipient address the sender used. The file was encrypted specifically for your wallet.
+                Make sure your wallet matches the recipient address the sender used. The file was encrypted specifically for your wallet.
               </p>
             </div>
 
@@ -441,9 +451,84 @@ export default function Home() {
             )}
           </div>
         )}
+
+        {/* History Panel */}
+        {tab === "history" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <p style={{ color: "#6b7280", fontSize: "13px", margin: 0 }}>
+                {history.length} transfer{history.length !== 1 ? "s" : ""}
+              </p>
+              {history.length > 0 && (
+                <button onClick={clearHistory} style={{
+                  background: "rgba(239,68,68,0.08)",
+                  border: "1px solid rgba(239,68,68,0.15)",
+                  borderRadius: "8px", color: "#f87171",
+                  fontSize: "11px", padding: "4px 10px", cursor: "pointer"
+                }}>Clear</button>
+              )}
+            </div>
+
+            {history.length === 0 ? (
+              <div style={{
+                textAlign: "center", padding: "40px 20px",
+                background: "rgba(0,0,0,0.2)",
+                border: "1px dashed rgba(255,255,255,0.06)",
+                borderRadius: "14px"
+              }}>
+                <p style={{ color: "#374151", fontSize: "24px", margin: "0 0 8px 0" }}>⏱</p>
+                <p style={{ color: "#4b5563", fontSize: "13px", margin: 0 }}>No transfers yet</p>
+              </div>
+            ) : (
+              history.map((item, i) => (
+                <div key={i} style={{
+                  background: "rgba(0,0,0,0.2)",
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  borderRadius: "14px", padding: "16px"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                    <span style={{
+                      background: item.type === "sent" ? "rgba(124,58,237,0.15)" : "rgba(16,185,129,0.15)",
+                      border: item.type === "sent" ? "1px solid rgba(124,58,237,0.2)" : "1px solid rgba(16,185,129,0.2)",
+                      borderRadius: "100px", padding: "2px 10px",
+                      fontSize: "11px", fontWeight: "600",
+                      color: item.type === "sent" ? "#a78bfa" : "#34d399"
+                    }}>
+                      {item.type === "sent" ? "↑ Sent" : "↓ Received"}
+                    </span>
+                    <span style={{ color: "#374151", fontSize: "11px" }}>{item.date}</span>
+                  </div>
+
+                  <p style={{ color: "white", fontSize: "13px", fontWeight: "500", margin: "0 0 4px 0" }}>{item.fileName}</p>
+
+                  {item.fileSize && (
+                    <p style={{ color: "#4b5563", fontSize: "11px", margin: "0 0 8px 0" }}>{item.fileSize}</p>
+                  )}
+
+                  {item.recipient && (
+                    <p style={{ color: "#4b5563", fontSize: "11px", margin: "0 0 8px 0" }}>To: {item.recipient}</p>
+                  )}
+
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <p style={{ color: "#4b5563", fontSize: "11px", fontFamily: "monospace", margin: 0, wordBreak: "break-all", flex: 1, marginRight: "8px" }}>
+                      {item.rootHash.slice(0, 20)}...
+                    </p>
+                    <button onClick={() => copyToClipboard(item.rootHash)} style={{
+                      background: "rgba(124,58,237,0.15)",
+                      border: "1px solid rgba(124,58,237,0.2)",
+                      borderRadius: "8px", color: "#a78bfa",
+                      fontSize: "11px", padding: "4px 10px",
+                      cursor: "pointer", whiteSpace: "nowrap"
+                    }}>Copy Hash</button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
       </div>
 
-      {/* Footer */}
       <div style={{ marginTop: "32px", zIndex: 1, textAlign: "center" }}>
         <p style={{ color: "#1f2937", fontSize: "12px", margin: 0 }}>
           End-to-end encrypted · Powered by 0G Storage
