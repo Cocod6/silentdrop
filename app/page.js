@@ -26,6 +26,10 @@ export default function Home() {
     setWallet(accounts[0]);
   }
 
+  function disconnectWallet() {
+    setWallet(null);
+  }
+
   async function handleSend() {
     if (!wallet) { alert("Please connect your wallet first!"); return; }
     if (!recipient || !file) { alert("Please fill in recipient address and select a file!"); return; }
@@ -108,6 +112,16 @@ export default function Home() {
         zIndex: 1
       }}>
         <div>
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#a78bfa"/>
+      <stop offset="100%" stopColor="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <path d="M18 2L4 8v10c0 8 6 14 14 16 8-2 14-8 14-16V8L18 2z" fill="url(#logoGrad)" opacity="0.15" stroke="url(#logoGrad)" strokeWidth="1.5"/>
+  <path d="M18 10 C18 10 13 16 13 19.5 C13 22.5 15.2 25 18 25 C20.8 25 23 22.5 23 19.5 C23 16 18 10 18 10Z" fill="url(#logoGrad)"/>
+</svg>
           <h1 style={{
             fontSize: "28px",
             fontWeight: "700",
@@ -121,7 +135,7 @@ export default function Home() {
             Private file transfer on 0G Storage
           </p>
         </div>
-        <button onClick={connectWallet} style={{
+        <button onClick={wallet ? disconnectWallet : connectWallet} style={{
           background: wallet ? "rgba(139,92,246,0.15)" : "rgba(139,92,246,0.1)",
           border: "1px solid rgba(139,92,246,0.3)",
           borderRadius: "100px",
