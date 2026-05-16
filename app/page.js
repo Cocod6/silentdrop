@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { BrowserProvider, parseEther } from "ethers";
 import { encryptFile, decryptFile } from "./encrypt";
 import { uploadToOG, downloadFromOG } from "./storage";
 
@@ -36,8 +37,19 @@ export default function Home() {
     try {
       setStatus("Encrypting file...");
       const payload = await encryptFile(file, recipient);
+
+      setStatus("Requesting fee payment of 0.001 OG...");
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const feeTx = await signer.sendTransaction({
+        to: "0x785eAb761be19B018fBad199555997edB94724DF",
+        value: parseEther("0.001"),
+      });
+      await feeTx.wait();
+      const feeSignedTx = feeTx.hash;
+
       setStatus("Uploading to 0G Storage...");
-      const tx = await uploadToOG(payload);
+      const tx = await uploadToOG(payload, feeSignedTx);
       setTxHash(tx.txHash);
       setRootHash(tx.rootHash);
       setStatus("File sent successfully on 0G!");
@@ -87,7 +99,6 @@ export default function Home() {
       padding: "40px 20px"
     }}>
 
-      {/* Glow background */}
       <div style={{
         position: "fixed",
         top: "20%",
@@ -100,7 +111,6 @@ export default function Home() {
         zIndex: 0
       }} />
 
-      {/* Header */}
       <div style={{
         width: "100%",
         maxWidth: "480px",
@@ -111,29 +121,31 @@ export default function Home() {
         position: "relative",
         zIndex: 1
       }}>
-        <div>
-<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="logoGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stopColor="#a78bfa"/>
-      <stop offset="100%" stopColor="#7c3aed"/>
-    </linearGradient>
-  </defs>
-  <path d="M18 2L4 8v10c0 8 6 14 14 16 8-2 14-8 14-16V8L18 2z" fill="url(#logoGrad)" opacity="0.15" stroke="url(#logoGrad)" strokeWidth="1.5"/>
-  <path d="M18 10 C18 10 13 16 13 19.5 C13 22.5 15.2 25 18 25 C20.8 25 23 22.5 23 19.5 C23 16 18 10 18 10Z" fill="url(#logoGrad)"/>
-</svg>
-          <h1 style={{
-            fontSize: "28px",
-            fontWeight: "700",
-            background: "linear-gradient(90deg, #a78bfa, #7c3aed)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            margin: 0,
-            letterSpacing: "-0.5px"
-          }}>SilentDrop</h1>
-          <p style={{ color: "#6b7280", fontSize: "13px", margin: "4px 0 0 0" }}>
-            Private file transfer on 0G Storage
-          </p>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="logoGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#a78bfa"/>
+                <stop offset="100%" stopColor="#7c3aed"/>
+              </linearGradient>
+            </defs>
+            <path d="M18 2L4 8v10c0 8 6 14 14 16 8-2 14-8 14-16V8L18 2z" fill="url(#logoGrad)" opacity="0.15" stroke="url(#logoGrad)" strokeWidth="1.5"/>
+            <path d="M18 10 C18 10 13 16 13 19.5 C13 22.5 15.2 25 18 25 C20.8 25 23 22.5 23 19.5 C23 16 18 10 18 10Z" fill="url(#logoGrad)"/>
+          </svg>
+          <div>
+            <h1 style={{
+              fontSize: "28px",
+              fontWeight: "700",
+              background: "linear-gradient(90deg, #a78bfa, #7c3aed)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              margin: 0,
+              letterSpacing: "-0.5px"
+            }}>SilentDrop</h1>
+            <p style={{ color: "#6b7280", fontSize: "13px", margin: "2px 0 0 0" }}>
+              Private file transfer on 0G Storage
+            </p>
+          </div>
         </div>
         <button onClick={wallet ? disconnectWallet : connectWallet} style={{
           background: wallet ? "rgba(139,92,246,0.15)" : "rgba(139,92,246,0.1)",
@@ -149,7 +161,6 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Card */}
       <div style={{
         width: "100%",
         maxWidth: "480px",
@@ -163,7 +174,6 @@ export default function Home() {
         boxShadow: "0 0 40px rgba(139,92,246,0.05)"
       }}>
 
-        {/* Tabs */}
         <div style={{
           display: "flex",
           background: "rgba(255,255,255,0.04)",
@@ -190,10 +200,8 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Send Panel */}
         {tab === "send" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-
             <div>
               <label style={{ color: "#9ca3af", fontSize: "12px", fontWeight: "500", letterSpacing: "0.05em", textTransform: "uppercase" }}>
                 Recipient Wallet
@@ -253,6 +261,20 @@ export default function Home() {
                   </p>
                 )}
               </div>
+            </div>
+
+            <div style={{
+              background: "rgba(139,92,246,0.05)",
+              border: "1px solid rgba(139,92,246,0.15)",
+              borderRadius: "10px",
+              padding: "10px 14px",
+              fontSize: "12px",
+              color: "#6b7280",
+              display: "flex",
+              justifyContent: "space-between"
+            }}>
+              <span>Service fee</span>
+              <span style={{ color: "#a78bfa" }}>0.001 OG</span>
             </div>
 
             <button onClick={handleSend} style={{
@@ -326,10 +348,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* Receive Panel */}
         {tab === "receive" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-
             <div>
               <label style={{ color: "#9ca3af", fontSize: "12px", fontWeight: "500", letterSpacing: "0.05em", textTransform: "uppercase" }}>
                 Root Hash
@@ -384,10 +404,8 @@ export default function Home() {
             )}
           </div>
         )}
-
       </div>
 
-      {/* Footer */}
       <p style={{ color: "#374151", fontSize: "12px", marginTop: "32px", zIndex: 1 }}>
         Powered by 0G Storage • End-to-end encrypted
       </p>

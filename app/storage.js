@@ -1,8 +1,8 @@
-export async function uploadToOG(encryptedPayload) {
+export async function uploadToOG(encryptedPayload, feeSignedTx) {
   const response = await fetch("/api/upload", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(encryptedPayload),
+    body: JSON.stringify({ encryptedPayload, feeSignedTx }),
   });
 
   const data = await response.json();
