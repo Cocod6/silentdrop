@@ -6,7 +6,6 @@ import { NextResponse } from "next/server";
 const INDEXER_RPC = "https://indexer-storage-turbo.0g.ai";
 const RPC_URL = "https://evmrpc.0g.ai";
 const FEE_RECIPIENT = "0x785eAb761be19B018fBad199555997edB94724DF";
-const FEE_AMOUNT = "0.001";
 
 export async function POST(request) {
   try {
@@ -19,14 +18,11 @@ export async function POST(request) {
 
     const provider = new ethers.JsonRpcProvider(RPC_URL);
 
-    // Broadcast the signed fee transaction
-    const feeTx = await provider.broadcastTransaction(feeSignedTx);
-    await feeTx.wait();
+    // Wait for fee transaction to confirm
+    const receipt = await provider.waitForTransaction(feeSignedTx, 1, 60000);
 
-    // Verify fee went to correct address
-    const receipt = await provider.getTransactionReceipt(feeTx.hash);
     if (!receipt) {
-      return NextResponse.json({ error: "Fee transaction failed" }, { status: 400 });
+      return NextResponse.json({ error: "Fee transaction not confirmed" }, { status: 400 });
     }
 
     // Now upload to 0G Storage
