@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 import { Blob as ZgBlob, Indexer } from "@0gfoundation/0g-storage-ts-sdk";
 import { ethers } from "ethers";
 import { NextResponse } from "next/server";
