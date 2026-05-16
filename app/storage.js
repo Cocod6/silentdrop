@@ -7,8 +7,8 @@ export async function uploadToOG(encryptedPayload) {
 
   const data = await response.json();
 
-  if (!response.ok) {
-    throw new Error(data.error || "Upload failed");
+  if (data.error) {
+    throw new Error(data.error);
   }
 
   return { txHash: data.txHash };
