@@ -11,11 +11,11 @@ export async function uploadToOG(encryptedPayload) {
     throw new Error(data.error);
   }
 
-  return { txHash: data.txHash };
+  return { txHash: data.txHash, rootHash: data.rootHash };
 }
 
-export async function downloadFromOG(txHash) {
-  const response = await fetch("/api/download?tx=" + txHash);
+export async function downloadFromOG(rootHash) {
+  const response = await fetch("/api/download?root=" + rootHash);
   const data = await response.json();
 
   if (data.error) {

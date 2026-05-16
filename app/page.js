@@ -10,6 +10,7 @@ export default function Home() {
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState("");
   const [txHash, setTxHash] = useState(null);
+  const [rootHash, setRootHash] = useState(null);
   const [receiveTx, setReceiveTx] = useState("");
   const [receiveStatus, setReceiveStatus] = useState("");
 
@@ -39,6 +40,7 @@ export default function Home() {
       setStatus("Uploading to 0G Storage...");
       const tx = await uploadToOG(payload);
       setTxHash(tx.txHash);
+      setRootHash(tx.rootHash);
       setStatus("File sent successfully on 0G!");
     } catch (err) {
       setStatus("Error: " + err.message);
@@ -51,7 +53,7 @@ export default function Home() {
       return;
     }
     if (!receiveTx) {
-      alert("Please enter a transaction hash!");
+      alert("Please enter a root hash!");
       return;
     }
     try {
@@ -145,6 +147,12 @@ export default function Home() {
               </a>
             </div>
           )}
+          {rootHash && (
+            <div className="text-xs bg-gray-800 rounded-lg p-3 break-all">
+              <p className="text-gray-300 mb-1 font-semibold">Root Hash (share with recipient):</p>
+              <p className="text-purple-400">{rootHash}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -152,7 +160,7 @@ export default function Home() {
         <div className="w-full max-w-md bg-gray-900 rounded-2xl p-6 flex flex-col gap-4">
           <h2 className="text-xl font-semibold text-purple-300">Receive a File</h2>
           <div className="flex flex-col gap-1">
-            <label className="text-gray-400 text-sm">Paste Transaction Hash</label>
+            <label className="text-gray-400 text-sm">Paste Root Hash</label>
             <input
               type="text"
               placeholder="0x..."

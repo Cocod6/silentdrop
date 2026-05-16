@@ -22,11 +22,13 @@ export async function POST(request) {
     const [tree, treeErr] = await zgBlob.merkleTree();
     if (treeErr) throw new Error("Merkle tree error: " + treeErr);
 
+    const rootHash = tree.rootHash();
+
     const indexer = new Indexer(INDEXER_RPC);
     const [tx, err] = await indexer.upload(zgBlob, RPC_URL, signer);
     if (err) throw new Error("Upload failed: " + err);
 
-    return NextResponse.json({ txHash: tx.txHash });
+    return NextResponse.json({ txHash: tx.txHash, rootHash: rootHash });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
