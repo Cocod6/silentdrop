@@ -3,6 +3,7 @@ import { Indexer } from "@0gfoundation/0g-storage-ts-sdk";
 import { NextResponse } from "next/server";
 
 const INDEXER_RPC = "https://indexer-storage-turbo.0g.ai";
+const RPC_URL = "https://evmrpc.0g.ai";
 
 export async function GET(request) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request) {
     }
 
     const indexer = new Indexer(INDEXER_RPC);
-    const [data, err] = await indexer.download(rootHash, undefined, false);
+    const [data, err] = await indexer.download(rootHash, RPC_URL, false);
 
     if (err) throw new Error("Download failed: " + err);
 
