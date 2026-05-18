@@ -25,10 +25,12 @@ export default function Home() {
   const [receiveStatus, setReceiveStatus] = useState("");
   const [dragging, setDragging] = useState(false);
   const [history, setHistory] = useState([]);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("silentdrop_history");
     if (saved) setHistory(JSON.parse(saved));
+    setIsMobile(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent));
   }, []);
 
   function saveToHistory(entry) {
@@ -404,55 +406,77 @@ export default function Home() {
         {/* Receive Panel */}
         {tab === "receive" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
-            <div>
-              <label style={{ color: "#6b7280", fontSize: "11px", fontWeight: "600", letterSpacing: "0.08em", textTransform: "uppercase" }}>Root Hash</label>
-              <input
-                type="text" placeholder="0x..."
-                value={receiveTx}
-                onChange={(e) => setReceiveTx(e.target.value)}
-                style={{
-                  width: "100%", marginTop: "8px",
-                  background: "rgba(0,0,0,0.3)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: "14px", padding: "13px 16px",
-                  color: "white", fontSize: "13px", outline: "none",
-                  boxSizing: "border-box", fontFamily: "monospace"
-                }}
-              />
-            </div>
-
-            <div style={{
-              background: "rgba(0,0,0,0.15)",
-              border: "1px solid rgba(255,255,255,0.04)",
-              borderRadius: "12px", padding: "14px 16px"
-            }}>
-              <p style={{ color: "#4b5563", fontSize: "12px", margin: 0, lineHeight: "1.6" }}>
-                Make sure your wallet matches the recipient address the sender used. The file was encrypted specifically for your wallet.
-              </p>
-            </div>
-
-            <button onClick={handleReceive} style={{
-              background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
-              border: "1px solid rgba(167,139,250,0.2)",
-              borderRadius: "14px", padding: "15px",
-              color: "white", fontSize: "15px", fontWeight: "600",
-              cursor: "pointer",
-              boxShadow: "0 0 40px rgba(124,58,237,0.25), inset 0 1px 0 rgba(255,255,255,0.1)"
-            }}>
-              Decrypt & Download
-            </button>
-
-            {receiveStatus && (
+            {!isMobile ? (
               <div style={{
-                background: receiveStatus.includes("Error") ? "rgba(239,68,68,0.08)" : "rgba(124,58,237,0.08)",
-                border: receiveStatus.includes("Error") ? "1px solid rgba(239,68,68,0.15)" : "1px solid rgba(124,58,237,0.15)",
-                borderRadius: "12px", padding: "13px 16px",
-                fontSize: "13px",
-                color: receiveStatus.includes("Error") ? "#f87171" : "#a78bfa",
-                textAlign: "center"
+                textAlign: "center", padding: "40px 20px",
+                background: "rgba(0,0,0,0.2)",
+                border: "1px dashed rgba(124,58,237,0.2)",
+                borderRadius: "18px",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: "16px"
               }}>
-                {receiveStatus.includes("Error") ? "⚠ " : "✓ "}{receiveStatus}
+                <div style={{ fontSize: "40px" }}>📱</div>
+                <div>
+                  <p style={{ color: "#c4b5fd", fontSize: "15px", fontWeight: "600", margin: "0 0 8px 0" }}>
+                    Mobile only
+                  </p>
+                  <p style={{ color: "#4b5563", fontSize: "13px", margin: 0, lineHeight: "1.6" }}>
+                    Downloads are only available on mobile devices. Open SilentDrop on your phone to receive files.
+                  </p>
+                </div>
               </div>
+            ) : (
+              <>
+                <div>
+                  <label style={{ color: "#6b7280", fontSize: "11px", fontWeight: "600", letterSpacing: "0.08em", textTransform: "uppercase" }}>Root Hash</label>
+                  <input
+                    type="text" placeholder="0x..."
+                    value={receiveTx}
+                    onChange={(e) => setReceiveTx(e.target.value)}
+                    style={{
+                      width: "100%", marginTop: "8px",
+                      background: "rgba(0,0,0,0.3)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      borderRadius: "14px", padding: "13px 16px",
+                      color: "white", fontSize: "13px", outline: "none",
+                      boxSizing: "border-box", fontFamily: "monospace"
+                    }}
+                  />
+                </div>
+
+                <div style={{
+                  background: "rgba(0,0,0,0.15)",
+                  border: "1px solid rgba(255,255,255,0.04)",
+                  borderRadius: "12px", padding: "14px 16px"
+                }}>
+                  <p style={{ color: "#4b5563", fontSize: "12px", margin: 0, lineHeight: "1.6" }}>
+                    Make sure your wallet matches the recipient address the sender used. The file was encrypted specifically for your wallet.
+                  </p>
+                </div>
+
+                <button onClick={handleReceive} style={{
+                  background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
+                  border: "1px solid rgba(167,139,250,0.2)",
+                  borderRadius: "14px", padding: "15px",
+                  color: "white", fontSize: "15px", fontWeight: "600",
+                  cursor: "pointer",
+                  boxShadow: "0 0 40px rgba(124,58,237,0.25), inset 0 1px 0 rgba(255,255,255,0.1)"
+                }}>
+                  Decrypt & Download
+                </button>
+
+                {receiveStatus && (
+                  <div style={{
+                    background: receiveStatus.includes("Error") ? "rgba(239,68,68,0.08)" : "rgba(124,58,237,0.08)",
+                    border: receiveStatus.includes("Error") ? "1px solid rgba(239,68,68,0.15)" : "1px solid rgba(124,58,237,0.15)",
+                    borderRadius: "12px", padding: "13px 16px",
+                    fontSize: "13px",
+                    color: receiveStatus.includes("Error") ? "#f87171" : "#a78bfa",
+                    textAlign: "center"
+                  }}>
+                    {receiveStatus.includes("Error") ? "⚠ " : "✓ "}{receiveStatus}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
