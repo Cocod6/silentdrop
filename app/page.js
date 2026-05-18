@@ -23,6 +23,7 @@ export default function Home() {
   const [rootHash, setRootHash] = useState(null);
   const [receiveTx, setReceiveTx] = useState("");
   const [receiveStatus, setReceiveStatus] = useState("");
+  const [decryptedFile, setDecryptedFile] = useState(null);
   const [dragging, setDragging] = useState(false);
   const [history, setHistory] = useState([]);
 
@@ -118,24 +119,9 @@ export default function Home() {
       setReceiveStatus("Decrypting file...");
       const decrypted = decryptFile(payload, wallet);
       const fileName = payload.fileName || "silentdrop-file";
-      const file = new File([decrypted], fileName, { type: decrypted.type });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: fileName });
-      } else {
-        const url = URL.createObjectURL(decrypted);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        a.style.display = "none";
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 1000);
-      }
-      setReceiveStatus("File downloaded successfully! Check your downloads folder.");
+      const url = URL.createObjectURL(decrypted);
+      setDecryptedFile({ url, name: fileName, blob: decrypted });
+      setReceiveStatus("File ready!");
 
       saveToHistory({
         type: "received",
@@ -416,7 +402,7 @@ export default function Home() {
               <input
                 type="text" placeholder="0x..."
                 value={receiveTx}
-                onChange={(e) => setReceiveTx(e.target.value)}
+                onChange={(e) => { setReceiveTx(e.target.value); setDecryptedFile(null); setReceiveStatus(""); }}
                 style={{
                   width: "100%", marginTop: "8px",
                   background: "rgba(0,0,0,0.3)",
@@ -459,6 +445,40 @@ export default function Home() {
                 textAlign: "center"
               }}>
                 {receiveStatus.includes("Error") ? "⚠ " : "✓ "}{receiveStatus}
+              </div>
+            )}
+
+            {decryptedFile && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <a
+                  href={decryptedFile.url}
+                  download={decryptedFile.name}
+                  style={{
+                    display: "block", textAlign: "center",
+                    background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                    border: "1px solid rgba(52,211,153,0.2)",
+                    borderRadius: "14px", padding: "15px",
+                    color: "white", fontSize: "15px", fontWeight: "600",
+                    textDecoration: "none",
+                    boxShadow: "0 0 40px rgba(5,150,105,0.25), inset 0 1px 0 rgba(255,255,255,0.1)"
+                  }}
+                >
+                  ↓ Save {decryptedFile.name}
+                </a>
+                {typeof navigator !== "undefined" && navigator.canShare && navigator.canShare({ files: [new File([decryptedFile.blob], decryptedFile.name)] }) && (
+                  <button
+                    onClick={() => navigator.share({ files: [new File([decryptedFile.blob], decryptedFile.name, { type: decryptedFile.blob.type })], title: decryptedFile.name })}
+                    style={{
+                      background: "rgba(124,58,237,0.1)",
+                      border: "1px solid rgba(124,58,237,0.2)",
+                      borderRadius: "14px", padding: "12px",
+                      color: "#a78bfa", fontSize: "14px", fontWeight: "500",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Share / Open with...
+                  </button>
+                )}
               </div>
             )}
           </div>
