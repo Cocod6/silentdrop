@@ -117,17 +117,24 @@ export default function Home() {
       const payload = await downloadFromOG(receiveTx);
       setReceiveStatus("Decrypting file...");
       const decrypted = decryptFile(payload, wallet);
-      const url = URL.createObjectURL(decrypted);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = payload.fileName || "silentdrop-file";
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 1000);
+      const fileName = payload.fileName || "silentdrop-file";
+      const file = new File([decrypted], fileName, { type: decrypted.type });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: fileName });
+      } else {
+        const url = URL.createObjectURL(decrypted);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 1000);
+      }
       setReceiveStatus("File downloaded successfully! Check your downloads folder.");
 
       saveToHistory({
